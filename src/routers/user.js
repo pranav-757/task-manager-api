@@ -103,7 +103,7 @@ router.post('/users/logoutAll', auth, async (req, res) => {
 //     }
 // })
 
-router.patch('/users/:id', async(req, res) => {
+router.patch('/users/me', auth, async(req, res) => {
     var allowedUpdates = ['name', 'age', 'password', 'email'];
     const updates = Object.keys(req.body)
 
@@ -116,32 +116,37 @@ router.patch('/users/:id', async(req, res) => {
     try {
         // findByIdAndUpdate bypasses the mongoose middleware therefore we need to
         //  re organise the code
-        //await User.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true});   
+        //await User.findByIdAndUpdate(req.params.id, req.body, {new: true, runValidators: true});
+        /*
+        adding auth
         const user = await User.findById(req.params.id)
 
         if(!user) {
             return res.status(404).send(user)
         }
-
+        */ 
+       
         updates.forEach(key => {
-            user[key] = req.body[key]
+            req.user[key] = req.body[key]
         })
 
-        await user.save()
-        res.send(user)
+        await req.user.save()
+        res.send(req.user)
     } catch(e) {
         res.status(400).send(e)
     }
     
 })
 
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/me', auth, async (req, res) => {
     try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if(!user)
-           return res.status(404).send({error: "no user"})
+        // const user = await User.findByIdAndDelete(req.params.id);
+        // if(!user)
+        //    return res.status(404).send({error: "no user"})
 
-        res.send(user);
+        await req.user.remove()
+
+        res.send(req.user);
     } catch (error) {
         res.status(500).send(error)
     }
