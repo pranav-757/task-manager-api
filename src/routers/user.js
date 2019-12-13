@@ -11,7 +11,7 @@ router.post('/users', async (req, res) => {
 
     try{
         await user.save()
-        const token = user.genrateAuthToken()
+        const token = await user.genrateAuthToken()
         //res.status(201).send({user: user.getPublicProfile(), token})
         res.status(201).send({user, token})
     } catch(e) {
