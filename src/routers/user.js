@@ -2,6 +2,9 @@ const express = require('express');
 const router = new express.Router();
 const auth = require('../middleware/auth')
 const User = require('../models/user')
+const sharp = require('sharp')
+const multer = require('multer')
+const { sendWelcomeEmail, sendGoodByeEmail } =require('../emails/account')
 
 //adding async here doesn't change the behavior of this function
 // also express only cares about what functions being called on req and res
@@ -11,6 +14,7 @@ router.post('/users', async (req, res) => {
 
     try{
         await user.save()
+        sendWelcomeEmail(user.email, user.name)
         const token = await user.genrateAuthToken()
         //res.status(201).send({user: user.getPublicProfile(), token})
         res.status(201).send({user, token})
@@ -145,11 +149,56 @@ router.delete('/users/me', auth, async (req, res) => {
         //    return res.status(404).send({error: "no user"})
 
         await req.user.remove()
-
+        sendGoodByeEmail( req.user.email, req.user.name)
         res.send(req.user);
     } catch (error) {
         res.status(500).send(error)
     }
 })
+
+const upload = multer({
+    //dest: 'avaatar',
+    limits: {
+        fileSize: 100000000
+    },
+    fileFilter(req, file, cb) {
+        file.originalname.endsWith('.jpg')
+        if(!file.originalname.match(/\.(jpeg|png|jpg)/)) {
+            return cb(new Error('unsupported file format'))
+        }
+
+        cb(undefined, true)
+        //cb(undefined, false) simply reject the upload
+    }
+})
+router.post('/users/me/avaatar', auth, upload.single('avaatar'), async (req, res) => {
+    const buffer = await sharp(req.file.buffer).resize({width:250, height:250}).png().toBuffer()
+    //req.user.avaatar = req.file.buffer
+    req.user.avaatar = buffer
+    await req.user.save()
+    res.send()
+},(error, req, res, next) =>{
+    res.status(400).send({error: error.message})
+})
+
+router.delete('/users/me/avaatar',auth,  async (req, res) => {
+    req.user.avaatar = undefined
+    await req.user.save()
+    res.send()
+})
+
+router.get('/users/:id/avaatar', async (req, res) => {
+    try {
+        const user = User.findById(req.user._id)
+
+        if(!user || !user.avaatar) 
+            throw new Error()
+        res.set('Content-Type', 'image/png')
+        res.send(user.avaatar)
+    } catch (error) {
+        res.status(400).send()
+    }
+})
+
 
 module.exports = router;
