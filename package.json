@@ -12,7 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@sendgrid/mail": "^6.4.0",
-    "bcrypt": "^3.0.7",
+    "bcrypt": "^5.0.0",
     "env-cmd": "^10.0.1",
     "express": "^4.16.4",
     "jsonwebtoken": "^8.5.1",
